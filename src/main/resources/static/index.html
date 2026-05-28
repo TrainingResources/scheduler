@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Scheduler Benchmark Live</title>
-  <link rel="stylesheet" href="/styles.css?v=20260528-3">
+  <link rel="stylesheet" href="/styles.css?v=20260528-4">
 </head>
 <body>
   <header class="topbar">
@@ -59,6 +59,10 @@
         <span>5M</span>
       </div>
       <div class="run-state" id="runState">Waiting for data</div>
+      <div class="countdown-row">
+        <span>First due in</span>
+        <strong id="dueCountdown">-</strong>
+      </div>
     </section>
 
     <section class="workspace">
@@ -90,7 +94,7 @@
           </label>
           <label>
             Start delay sec
-            <input id="startDelaySeconds" type="number" min="0" step="15" value="300">
+            <input id="startDelaySeconds" type="number" min="0" step="15" value="30">
           </label>
           <label class="wide">
             Namespace
@@ -103,6 +107,7 @@
           <div><dt>Expected executions</dt><dd id="expectedTotalExecutions">-</dd></div>
           <div><dt>Start UTC</dt><dd id="startUtc">-</dd></div>
           <div><dt>Stop before UTC</dt><dd id="stopUtc">-</dd></div>
+          <div><dt>Processed</dt><dd id="processedExecutions">0 / 0</dd></div>
         </dl>
 
         <div class="prepare-progress">
@@ -186,6 +191,6 @@
 
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
-  <script src="/app.js?v=20260528-3"></script>
+  <script src="/app.js?v=20260528-4"></script>
 </body>
 </html>

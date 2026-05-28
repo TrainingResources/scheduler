@@ -25,6 +25,15 @@ function utc(ms) {
   return new Date(ms).toISOString().replace(".000Z", "Z");
 }
 
+function duration(ms) {
+  if (ms == null) return "-";
+  if (ms <= 0) return "due now";
+  const totalSeconds = Math.ceil(ms / 1000);
+  const minutes = Math.floor(totalSeconds / 60);
+  const seconds = totalSeconds % 60;
+  return `${minutes}:${String(seconds).padStart(2, "0")}`;
+}
+
 async function request(path, options = {}) {
   const response = await fetch(path, {
     headers: { "Content-Type": "application/json" },
@@ -115,9 +124,11 @@ function renderStats(stats) {
   $("progressText").textContent = `${progress.toFixed(1)}% of ${number(target)} target`;
   $("progressPercent").textContent = `${progress.toFixed(1)}%`;
   $("progressFill").style.width = `${progress}%`;
+  $("processedExecutions").textContent = `${number(stats.ackedTotal)} / ${number(target)}`;
   $("backlogPercent").textContent = `${backlogPercent.toFixed(1)}%`;
   $("backlogFill").style.width = `${backlogPercent}%`;
   $("runState").textContent = runStateText(stats, progress, instantRate);
+  $("dueCountdown").textContent = dueCountdownText();
 
   $("consumeRate").textContent = rate(instantRate || stats.consumeRatePerSecond);
   $("consumeRateMinute").textContent = `${number(Math.round((instantRate || stats.consumeRatePerSecond) * 60))}/min`;
@@ -141,8 +152,12 @@ function renderStats(stats) {
 function runStateText(stats, progress, instantRate) {
   const dueSize = stats.dueZsetSize ?? 0;
   const pending = stats.pendingStreamMessages ?? 0;
+  const dueInMs = state.prepare?.baseDueAtUtcMillis ? state.prepare.baseDueAtUtcMillis - Date.now() : null;
   if (progress >= 100 && pending === 0) {
     return "Completed target. Stream pending is empty.";
+  }
+  if (state.prepare && dueInMs != null && dueInMs > 0 && stats.ackedTotal === 0 && dueSize > 0) {
+    return `Scheduler can be running, but jobs are not due yet. First bucket starts in ${duration(dueInMs)}.`;
   }
   if (stats.ackedTotal === 0 && dueSize > 0) {
     return "Prepared data is in Redis. Start the benchmark, then progress and throughput will move when jobs become due.";
@@ -154,6 +169,11 @@ function runStateText(stats, progress, instantRate) {
     return "No benchmark data loaded. Use Prepare 5M or seed a smaller run.";
   }
   return "Runtime is idle. Counters reset on application restart; Redis backlog is still shown below.";
+}
+
+function dueCountdownText() {
+  if (!state.prepare?.baseDueAtUtcMillis) return "-";
+  return duration(state.prepare.baseDueAtUtcMillis - Date.now());
 }
 
 function drawChart() {

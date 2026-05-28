@@ -216,6 +216,24 @@ main {
   font-weight: 800;
 }
 
+.countdown-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 10px;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fff;
+  color: var(--muted);
+  font-weight: 800;
+}
+
+.countdown-row strong {
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+}
+
 .workspace {
   grid-template-columns: minmax(360px, 0.78fr) minmax(520px, 1.22fr);
   margin-top: 16px;
