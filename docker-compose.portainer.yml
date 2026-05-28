@@ -7,11 +7,11 @@ services:
       - "9104:8080"
     environment:
       NODE_ID: portainer-node-1
-      POSTGRES_URL: jdbc:postgresql://postgres_foodfinder:5432/foodfinder
-      POSTGRES_USER: treloc
-      POSTGRES_PASSWORD: ciorbafarapenali@
-      REDIS_HOST: redis
-      REDIS_PORT: 6379
+      POSTGRES_URL: ${POSTGRES_URL}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      REDIS_HOST: ${REDIS_HOST:-redis}
+      REDIS_PORT: ${REDIS_PORT:-6379}
       SQL_INIT_MODE: always
       BENCHMARK_AUTO_START: "false"
       SCHEDULER_CLAIM_BATCH_SIZE: 5000
