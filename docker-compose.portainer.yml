@@ -1,0 +1,34 @@
+services:
+  scheduler-benchmark:
+    image: scheduler-benchmark:latest
+    container_name: scheduler-benchmark
+    restart: unless-stopped
+    ports:
+      - "9104:8080"
+    environment:
+      NODE_ID: portainer-node-1
+      POSTGRES_URL: jdbc:postgresql://postgres_foodfinder:5432/foodfinder
+      POSTGRES_USER: treloc
+      POSTGRES_PASSWORD: ciorbafarapenali@
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      SQL_INIT_MODE: always
+      BENCHMARK_AUTO_START: "false"
+      SCHEDULER_CLAIM_BATCH_SIZE: 5000
+      SCHEDULER_POLL_INTERVAL_MS: 1
+      STREAM_CONSUMER_THREADS: 2
+      STREAM_CONSUMER_BATCH_SIZE: 5000
+      STREAM_CONSUMER_BLOCK_MS: 100
+      SEED_POSTGRES_MAX_ROWS: 1000
+      SEED_REDIS_PIPELINE_SIZE: 10000
+    networks:
+      - postgres
+      - redis
+
+networks:
+  postgres:
+    external: true
+    name: postgresql_foodfinder_net
+  redis:
+    external: true
+    name: reddis_default

@@ -1,0 +1,170 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Scheduler Benchmark Live</title>
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+  <header class="topbar">
+    <div>
+      <h1>Scheduler Benchmark Live</h1>
+      <p>Redis ZSET claims, Redis Stream workers, PostgreSQL schedule config</p>
+    </div>
+    <div class="status" id="runtimeStatus">
+      <span class="status-dot"></span>
+      <span id="runtimeText">Checking</span>
+    </div>
+  </header>
+
+  <main>
+    <section class="summary-grid" aria-label="Benchmark summary">
+      <article class="metric primary">
+        <span class="label">Acked Executions</span>
+        <strong id="ackedTotal">0</strong>
+        <small id="progressText">0% of 5M target</small>
+      </article>
+      <article class="metric">
+        <span class="label">Consume Rate</span>
+        <strong id="consumeRate">0/s</strong>
+        <small id="consumeRateMinute">0/min</small>
+      </article>
+      <article class="metric">
+        <span class="label">Stream Pending</span>
+        <strong id="pendingStreamMessages">0</strong>
+        <small>consumer group backlog</small>
+      </article>
+      <article class="metric">
+        <span class="label">Due ZSET</span>
+        <strong id="dueZsetSize">0</strong>
+        <small>scheduled or rescheduled</small>
+      </article>
+    </section>
+
+    <section class="progress-band">
+      <div class="progress-head">
+        <span>5M target progress</span>
+        <span id="progressPercent">0%</span>
+      </div>
+      <div class="progress-track">
+        <div class="progress-fill" id="progressFill"></div>
+      </div>
+      <div class="milestones">
+        <span>0</span>
+        <span>1M</span>
+        <span>2M</span>
+        <span>3M</span>
+        <span>4M</span>
+        <span>5M</span>
+      </div>
+    </section>
+
+    <section class="workspace">
+      <div class="panel controls-panel">
+        <div class="panel-head">
+          <h2>Live Controls</h2>
+          <span id="lastUpdated">Not updated yet</span>
+        </div>
+
+        <div class="button-row">
+          <button class="action" id="prepareButton" type="button">Prepare 5M</button>
+          <button class="action start" id="startButton" type="button">Start</button>
+          <button class="action stop" id="stopButton" type="button">Stop</button>
+          <button class="icon-button" id="resetButton" type="button" title="Reset benchmark data">Reset</button>
+        </div>
+
+        <div class="form-grid">
+          <label>
+            Unique/min
+            <input id="uniquePerMinute" type="number" min="1" step="10000" value="500000">
+          </label>
+          <label>
+            Recurring/min
+            <input id="recurringPerMinute" type="number" min="1" step="10000" value="500000">
+          </label>
+          <label>
+            Minutes
+            <input id="durationMinutes" type="number" min="1" step="1" value="5">
+          </label>
+          <label>
+            Start delay sec
+            <input id="startDelaySeconds" type="number" min="0" step="15" value="300">
+          </label>
+          <label class="wide">
+            Namespace
+            <input id="namespace" type="text" value="presentation-5m">
+          </label>
+        </div>
+
+        <dl class="prepare-details">
+          <div><dt>Initial jobs</dt><dd id="initialRedisJobs">-</dd></div>
+          <div><dt>Expected executions</dt><dd id="expectedTotalExecutions">-</dd></div>
+          <div><dt>Start UTC</dt><dd id="startUtc">-</dd></div>
+          <div><dt>Stop before UTC</dt><dd id="stopUtc">-</dd></div>
+        </dl>
+      </div>
+
+      <div class="panel chart-panel">
+        <div class="panel-head">
+          <h2>Throughput</h2>
+          <span>delta consumed/sec</span>
+        </div>
+        <canvas id="rateChart" width="900" height="360" aria-label="Throughput chart"></canvas>
+      </div>
+    </section>
+
+    <section class="details-grid">
+      <article class="panel">
+        <div class="panel-head">
+          <h2>Pipeline Totals</h2>
+          <span>lifetime counters</span>
+        </div>
+        <table>
+          <tbody>
+            <tr><th>Claimed</th><td id="claimedTotal">0</td></tr>
+            <tr><th>Published</th><td id="publishedTotal">0</td></tr>
+            <tr><th>Consumed</th><td id="consumedTotal">0</td></tr>
+            <tr><th>Acked</th><td id="ackedTotalDetail">0</td></tr>
+            <tr><th>Rescheduled</th><td id="rescheduledTotal">0</td></tr>
+          </tbody>
+        </table>
+      </article>
+
+      <article class="panel">
+        <div class="panel-head">
+          <h2>Redis State</h2>
+          <span>storage pressure</span>
+        </div>
+        <table>
+          <tbody>
+            <tr><th>Due ZSET size</th><td id="dueZsetDetail">0</td></tr>
+            <tr><th>Stream length</th><td id="streamLength">0</td></tr>
+            <tr><th>Pending messages</th><td id="pendingDetail">0</td></tr>
+            <tr><th>Claim avg</th><td id="claimRate">0/s</td></tr>
+            <tr><th>Publish avg</th><td id="publishRate">0/s</td></tr>
+          </tbody>
+        </table>
+      </article>
+
+      <article class="panel notes-panel">
+        <div class="panel-head">
+          <h2>Test Shape</h2>
+          <span>presentation notes</span>
+        </div>
+        <ul>
+          <li>PostgreSQL keeps schedule configuration only.</li>
+          <li>Redis ZSET holds due executions by UTC millis score.</li>
+          <li>Lua claim removes due members atomically.</li>
+          <li>Redis Stream feeds dummy workers with batched ACKs.</li>
+          <li>Recurring v1 reschedules by +60 seconds.</li>
+        </ul>
+      </article>
+    </section>
+  </main>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+  <script src="/app.js"></script>
+</body>
+</html>

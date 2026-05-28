@@ -1,0 +1,48 @@
+spring:
+  application:
+    name: scheduler-benchmark
+  datasource:
+    url: ${POSTGRES_URL:jdbc:postgresql://localhost:5432/scheduler}
+    username: ${POSTGRES_USER:postgres}
+    password: ${POSTGRES_PASSWORD:postgres}
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASSWORD:}
+      database: ${REDIS_DATABASE:0}
+  sql:
+    init:
+      mode: ${SQL_INIT_MODE:always}
+
+server:
+  port: ${SERVER_PORT:8080}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
+
+benchmark:
+  node-id: ${NODE_ID:${random.uuid}}
+  auto-start: ${BENCHMARK_AUTO_START:false}
+  redis:
+    due-key: ${SCHEDULER_DUE_KEY:scheduler:due}
+    job-key-prefix: ${SCHEDULER_JOB_KEY_PREFIX:scheduler:job:}
+    stream-key: ${SCHEDULER_STREAM_KEY:scheduler:stream}
+    stream-group: ${SCHEDULER_STREAM_GROUP:scheduler-workers}
+  scheduler:
+    enabled: ${SCHEDULER_ENABLED:true}
+    claim:
+      batch-size: ${SCHEDULER_CLAIM_BATCH_SIZE:1000}
+    poll-interval-ms: ${SCHEDULER_POLL_INTERVAL_MS:10}
+  stream:
+    consumer:
+      enabled: ${STREAM_CONSUMER_ENABLED:true}
+      threads: ${STREAM_CONSUMER_THREADS:1}
+      batch-size: ${STREAM_CONSUMER_BATCH_SIZE:1000}
+      block-ms: ${STREAM_CONSUMER_BLOCK_MS:1000}
+  seed:
+    postgres-max-rows: ${SEED_POSTGRES_MAX_ROWS:1000}
+    redis-pipeline-size: ${SEED_REDIS_PIPELINE_SIZE:5000}
