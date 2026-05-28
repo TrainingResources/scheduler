@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Scheduler Benchmark Live</title>
-  <link rel="stylesheet" href="/styles.css">
+  <link rel="stylesheet" href="/styles.css?v=20260528-2">
 </head>
 <body>
   <header class="topbar">
@@ -58,6 +58,7 @@
         <span>4M</span>
         <span>5M</span>
       </div>
+      <div class="run-state" id="runState">Waiting for data</div>
     </section>
 
     <section class="workspace">
@@ -136,6 +137,15 @@
           <h2>Redis State</h2>
           <span>storage pressure</span>
         </div>
+        <div class="backlog-meter">
+          <div class="backlog-head">
+            <span>Backlog remaining</span>
+            <strong id="backlogPercent">0%</strong>
+          </div>
+          <div class="progress-track compact">
+            <div class="backlog-fill" id="backlogFill"></div>
+          </div>
+        </div>
         <table>
           <tbody>
             <tr><th>Due ZSET size</th><td id="dueZsetDetail">0</td></tr>
@@ -165,6 +175,6 @@
 
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
-  <script src="/app.js"></script>
+  <script src="/app.js?v=20260528-2"></script>
 </body>
 </html>

@@ -175,6 +175,11 @@ main {
   border-radius: 6px;
 }
 
+.progress-track.compact {
+  height: 10px;
+  margin: 8px 0 14px;
+}
+
 .progress-fill {
   width: 0%;
   height: 100%;
@@ -182,9 +187,26 @@ main {
   transition: width 280ms ease;
 }
 
+.backlog-fill {
+  width: 0%;
+  height: 100%;
+  background: linear-gradient(90deg, var(--warning), var(--danger));
+  transition: width 280ms ease;
+}
+
 .milestones {
   color: var(--muted);
   font-size: 12px;
+}
+
+.run-state {
+  margin-top: 12px;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #f8fafc;
+  color: #344054;
+  font-weight: 800;
 }
 
 .workspace {
@@ -324,6 +346,23 @@ canvas {
 table {
   width: 100%;
   border-collapse: collapse;
+}
+
+.backlog-meter {
+  margin-bottom: 8px;
+}
+
+.backlog-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.backlog-head strong {
+  color: var(--ink);
 }
 
 th,

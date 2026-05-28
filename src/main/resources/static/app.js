@@ -3,6 +3,7 @@ const state = {
   lastStats: null,
   lastSampleAt: null,
   deltaRates: [],
+  peakDueZset: Number(localStorage.getItem("benchmarkPeakDueZset") || "0"),
   prepare: JSON.parse(localStorage.getItem("benchmarkPrepare") || "null")
 };
 
@@ -72,12 +73,19 @@ function renderStats(stats) {
   const target = state.prepare?.expectedTotalExecutions || TARGET_TOTAL;
   const progress = Math.min(100, (stats.ackedTotal / target) * 100);
   const instantRate = state.deltaRates.at(-1) || 0;
+  const dueSize = stats.dueZsetSize ?? 0;
+  state.peakDueZset = Math.max(state.peakDueZset, dueSize, state.prepare?.initialRedisJobs || 0);
+  localStorage.setItem("benchmarkPeakDueZset", String(state.peakDueZset));
+  const backlogPercent = state.peakDueZset > 0 ? Math.min(100, (dueSize / state.peakDueZset) * 100) : 0;
 
   $("ackedTotal").textContent = number(stats.ackedTotal);
   $("ackedTotalDetail").textContent = number(stats.ackedTotal);
   $("progressText").textContent = `${progress.toFixed(1)}% of ${number(target)} target`;
   $("progressPercent").textContent = `${progress.toFixed(1)}%`;
   $("progressFill").style.width = `${progress}%`;
+  $("backlogPercent").textContent = `${backlogPercent.toFixed(1)}%`;
+  $("backlogFill").style.width = `${backlogPercent}%`;
+  $("runState").textContent = runStateText(stats, progress, instantRate);
 
   $("consumeRate").textContent = rate(instantRate || stats.consumeRatePerSecond);
   $("consumeRateMinute").textContent = `${number(Math.round((instantRate || stats.consumeRatePerSecond) * 60))}/min`;
@@ -98,6 +106,24 @@ function renderStats(stats) {
   drawChart();
 }
 
+function runStateText(stats, progress, instantRate) {
+  const dueSize = stats.dueZsetSize ?? 0;
+  const pending = stats.pendingStreamMessages ?? 0;
+  if (progress >= 100 && pending === 0) {
+    return "Completed target. Stream pending is empty.";
+  }
+  if (stats.ackedTotal === 0 && dueSize > 0) {
+    return "Prepared data is in Redis. Start the benchmark, then progress and throughput will move when jobs become due.";
+  }
+  if (instantRate > 0 || stats.consumeRatePerSecond > 0 || pending > 0) {
+    return `Live run active. Current delta rate is ${rate(instantRate || stats.consumeRatePerSecond)}.`;
+  }
+  if (dueSize === 0 && stats.streamLength === 0) {
+    return "No benchmark data loaded. Use Prepare 5M or seed a smaller run.";
+  }
+  return "Runtime is idle. Counters reset on application restart; Redis backlog is still shown below.";
+}
+
 function drawChart() {
   const canvas = $("rateChart");
   const ctx = canvas.getContext("2d");
@@ -109,6 +135,7 @@ function drawChart() {
   const chartH = height - pad * 2;
   const values = state.deltaRates.length ? state.deltaRates : [0];
   const max = Math.max(20_000, ...values) * 1.12;
+  const targetPerSecond = 1_000_000 / 60;
 
   ctx.strokeStyle = "#d9e1ea";
   ctx.lineWidth = 1;
@@ -124,6 +151,18 @@ function drawChart() {
     const label = `${rateFmt.format((max / 4) * (4 - i))}/s`;
     ctx.fillText(label, 8, y + 4);
   }
+
+  const targetY = pad + chartH - (Math.min(targetPerSecond, max) / max) * chartH;
+  ctx.strokeStyle = "#b45309";
+  ctx.lineWidth = 2;
+  ctx.setLineDash([8, 8]);
+  ctx.beginPath();
+  ctx.moveTo(pad, targetY);
+  ctx.lineTo(width - pad, targetY);
+  ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.fillStyle = "#b45309";
+  ctx.fillText("1M/min target", width - pad - 105, targetY - 8);
 
   ctx.strokeStyle = "#0f766e";
   ctx.lineWidth = 4;
@@ -172,6 +211,8 @@ async function prepareLoadTest() {
   state.lastStats = null;
   state.lastSampleAt = null;
   state.deltaRates = [];
+  state.peakDueZset = response.initialRedisJobs;
+  localStorage.setItem("benchmarkPeakDueZset", String(state.peakDueZset));
   renderPrepare();
   await refresh();
   toast(`Prepared ${number(response.expectedTotalExecutions)} expected executions`);
