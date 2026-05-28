@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Scheduler Benchmark Live</title>
-  <link rel="stylesheet" href="/styles.css?v=20260528-2">
+  <link rel="stylesheet" href="/styles.css?v=20260528-3">
 </head>
 <body>
   <header class="topbar">
@@ -104,6 +104,17 @@
           <div><dt>Start UTC</dt><dd id="startUtc">-</dd></div>
           <div><dt>Stop before UTC</dt><dd id="stopUtc">-</dd></div>
         </dl>
+
+        <div class="prepare-progress">
+          <div class="prepare-progress-head">
+            <span id="prepareMessage">No prepare job running</span>
+            <strong id="preparePercent">0%</strong>
+          </div>
+          <div class="progress-track compact">
+            <div class="prepare-fill" id="prepareFill"></div>
+          </div>
+          <div class="prepare-progress-foot" id="prepareFoot">0 / 0 initial jobs</div>
+        </div>
       </div>
 
       <div class="panel chart-panel">
@@ -175,6 +186,6 @@
 
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
-  <script src="/app.js?v=20260528-2"></script>
+  <script src="/app.js?v=20260528-3"></script>
 </body>
 </html>

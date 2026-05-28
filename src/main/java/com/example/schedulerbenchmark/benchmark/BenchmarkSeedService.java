@@ -5,6 +5,7 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.function.LongConsumer;
 
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
@@ -28,6 +29,12 @@ public class BenchmarkSeedService {
 
     @Transactional
     public SeedResponse seed(SeedRequest request) {
+        return seed(request, ignored -> {
+        });
+    }
+
+    @Transactional
+    public SeedResponse seed(SeedRequest request, LongConsumer progressConsumer) {
         int ruleCount = request.effectiveRuleCountPerUserKey();
         int pipelineSize = properties.seed().redisPipelineSize();
         List<BenchmarkRedisService.SeedJob> buffer = new ArrayList<>(pipelineSize);
@@ -51,11 +58,13 @@ public class BenchmarkSeedService {
                     "recurring", Boolean.toString(recurring))));
             if (buffer.size() >= pipelineSize) {
                 redis.seedJobs(buffer);
+                progressConsumer.accept(buffer.size());
                 buffer.clear();
             }
         }
         if (!buffer.isEmpty()) {
             redis.seedJobs(buffer);
+            progressConsumer.accept(buffer.size());
         }
         return new SeedResponse(request.totalJobs(), postgresRows, request.dueAtUtcMillis());
     }

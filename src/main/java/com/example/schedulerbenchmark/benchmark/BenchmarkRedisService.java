@@ -1,6 +1,7 @@
 package com.example.schedulerbenchmark.benchmark;
 
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
@@ -164,17 +165,30 @@ public class BenchmarkRedisService {
     private void deleteJobKeys() {
         redis.execute((RedisCallback<Void>) connection -> {
             RedisConnection cursorConnection = connection;
+            List<byte[]> batch = new ArrayList<>(10_000);
             try (var cursor = cursorConnection.keyCommands().scan(
                     org.springframework.data.redis.core.ScanOptions.scanOptions()
                             .match(properties.redis().jobKeyPrefix() + "*")
                             .count(10_000)
                             .build())) {
                 while (cursor.hasNext()) {
-                    connection.keyCommands().del(cursor.next());
+                    batch.add(cursor.next());
+                    if (batch.size() >= 10_000) {
+                        deleteBatch(connection, batch);
+                    }
                 }
             }
+            deleteBatch(connection, batch);
             return null;
         });
+    }
+
+    private void deleteBatch(RedisConnection connection, List<byte[]> batch) {
+        if (batch.isEmpty()) {
+            return;
+        }
+        connection.keyCommands().del(batch.toArray(byte[][]::new));
+        batch.clear();
     }
 
     public record SeedJob(String member, long dueAtUtcMillis, Map<String, String> hash) {

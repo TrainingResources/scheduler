@@ -4,7 +4,8 @@ const state = {
   lastSampleAt: null,
   deltaRates: [],
   peakDueZset: Number(localStorage.getItem("benchmarkPeakDueZset") || "0"),
-  prepare: JSON.parse(localStorage.getItem("benchmarkPrepare") || "null")
+  prepare: JSON.parse(localStorage.getItem("benchmarkPrepare") || "null"),
+  prepareJob: null
 };
 
 const $ = (id) => document.getElementById(id);
@@ -57,6 +58,37 @@ function renderPrepare() {
   $("expectedTotalExecutions").textContent = prepare ? number(prepare.expectedTotalExecutions) : "-";
   $("startUtc").textContent = prepare ? utc(prepare.baseDueAtUtcMillis) : "-";
   $("stopUtc").textContent = prepare ? utc(prepare.stopBeforeEpochSeconds * 1000) : "-";
+}
+
+function renderPrepareJob(job) {
+  if (!job) return;
+  state.prepareJob = job;
+  const total = job.initialRedisJobs || 0;
+  const seeded = job.jobsSeeded || 0;
+  const percent = total > 0 ? Math.min(100, (seeded / total) * 100) : 0;
+  $("prepareMessage").textContent = job.message || "Preparing data";
+  $("preparePercent").textContent = `${percent.toFixed(1)}%`;
+  $("prepareFill").style.width = `${percent}%`;
+  $("prepareFoot").textContent = `${number(seeded)} / ${number(total)} initial jobs, wave ${job.wavesCompleted || 0}/${job.wavesTotal || 0}`;
+
+  if (job.initialRedisJobs || job.expectedTotalExecutions) {
+    state.prepare = {
+      namespace: job.namespace,
+      initialRedisJobs: job.initialRedisJobs,
+      expectedTotalExecutions: job.expectedTotalExecutions,
+      baseDueAtUtcMillis: job.baseDueAtUtcMillis,
+      startEpochSeconds: job.startEpochSeconds,
+      stopBeforeEpochSeconds: job.stopBeforeEpochSeconds
+    };
+    localStorage.setItem("benchmarkPrepare", JSON.stringify(state.prepare));
+    renderPrepare();
+  }
+
+  if (job.completed) {
+    $("prepareMessage").textContent = "Prepare complete";
+    $("preparePercent").textContent = "100.0%";
+    $("prepareFill").style.width = "100%";
+  }
 }
 
 function renderStats(stats) {
@@ -184,8 +216,12 @@ function drawChart() {
 
 async function refresh() {
   try {
-    const status = await request("/benchmark/status");
+    const [status, prepareJob] = await Promise.all([
+      request("/benchmark/status"),
+      request("/benchmark/loadtest/prepare-status")
+    ]);
     setRuntime(status.running);
+    renderPrepareJob(prepareJob);
     renderStats(status.stats);
   } catch (error) {
     $("runtimeText").textContent = "Disconnected";
@@ -201,21 +237,19 @@ async function prepareLoadTest() {
     startDelaySeconds: Number($("startDelaySeconds").value),
     namespace: $("namespace").value.trim()
   };
-  toast("Preparing load-test data");
-  const response = await request("/benchmark/loadtest/prepare-5m", {
+  toast("Preparing load-test data in background");
+  const response = await request("/benchmark/loadtest/prepare-5m/async", {
     method: "POST",
     body: JSON.stringify(body)
   });
-  state.prepare = response;
-  localStorage.setItem("benchmarkPrepare", JSON.stringify(response));
+  renderPrepareJob(response);
   state.lastStats = null;
   state.lastSampleAt = null;
   state.deltaRates = [];
-  state.peakDueZset = response.initialRedisJobs;
+  state.peakDueZset = response.initialRedisJobs || 0;
   localStorage.setItem("benchmarkPeakDueZset", String(state.peakDueZset));
-  renderPrepare();
   await refresh();
-  toast(`Prepared ${number(response.expectedTotalExecutions)} expected executions`);
+  toast("Prepare started");
 }
 
 async function postControl(path, message) {

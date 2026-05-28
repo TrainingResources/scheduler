@@ -18,14 +18,17 @@ public class BenchmarkController {
     private final BenchmarkRedisService redisService;
     private final BenchmarkCounters counters;
     private final BenchmarkProperties properties;
+    private final LoadTestPrepareJobService prepareJobService;
 
     public BenchmarkController(BenchmarkSeedService seedService, BenchmarkRuntimeService runtimeService,
-            BenchmarkRedisService redisService, BenchmarkCounters counters, BenchmarkProperties properties) {
+            BenchmarkRedisService redisService, BenchmarkCounters counters, BenchmarkProperties properties,
+            LoadTestPrepareJobService prepareJobService) {
         this.seedService = seedService;
         this.runtimeService = runtimeService;
         this.redisService = redisService;
         this.counters = counters;
         this.properties = properties;
+        this.prepareJobService = prepareJobService;
     }
 
     @PostMapping("/seed")
@@ -49,6 +52,16 @@ public class BenchmarkController {
         return seedService.prepareFiveMinuteLoadTest(body == null
                 ? new LoadTestPrepareRequest(null, null, null, null, null)
                 : body);
+    }
+
+    @PostMapping("/loadtest/prepare-5m/async")
+    public LoadTestPrepareJobStatus prepareFiveMinuteLoadTestAsync(@RequestBody(required = false) LoadTestPrepareRequest body) {
+        return prepareJobService.start(body);
+    }
+
+    @GetMapping("/loadtest/prepare-status")
+    public LoadTestPrepareJobStatus prepareStatus() {
+        return prepareJobService.status();
     }
 
     @GetMapping("/stats")

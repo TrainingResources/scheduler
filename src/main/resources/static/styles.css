@@ -194,6 +194,13 @@ main {
   transition: width 280ms ease;
 }
 
+.prepare-fill {
+  width: 0%;
+  height: 100%;
+  background: linear-gradient(90deg, var(--blue), var(--accent));
+  transition: width 280ms ease;
+}
+
 .milestones {
   color: var(--muted);
   font-size: 12px;
@@ -326,6 +333,32 @@ input:focus {
   margin: 6px 0 0;
   font-weight: 800;
   overflow-wrap: anywhere;
+}
+
+.prepare-progress {
+  margin-top: 16px;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #f8fafc;
+}
+
+.prepare-progress-head,
+.prepare-progress-foot {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.prepare-progress-head span,
+.prepare-progress-foot {
+  color: var(--muted);
+}
+
+.prepare-progress-head strong {
+  color: var(--ink);
 }
 
 .chart-panel {
